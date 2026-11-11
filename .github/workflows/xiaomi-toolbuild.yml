@@ -148,13 +148,22 @@ jobs:
           echo "[STEP] Pack ROM" | tee -a build_action.log
           sudo -E bash packROM.sh 2>&1 | tee -a build_action.log
 
-      - name: Set up Rclone
+      - name: Set up Drive credentials
         working-directory: toolbuild
         run: |
           set -e
           set -o pipefail
-          echo "[STEP] Set up Rclone" | tee -a build_action.log
-          sudo -E bash uploadROM.sh setup "${{ secrets.GH_TOKEN }}" "${{ secrets.GH_REPO }}" "${{ secrets.RCLONE_TOKEN_PATH }}" 2>&1 | tee -a build_action.log
+          echo "[STEP] Set up Drive credentials" | tee -a build_action.log
+          if [ -n "${{ secrets.TOKEN_PICKLE_B64 }}" ]; then
+            echo "${{ secrets.TOKEN_PICKLE_B64 }}" | base64 -d > token.pickle
+          elif [ -n "${{ secrets.GH_REPO }}" ] && [ -n "${{ secrets.RCLONE_TOKEN_PATH }}" ]; then
+            sudo -E bash uploadROM.sh setup "${{ secrets.GH_TOKEN }}" "${{ secrets.GH_REPO }}" "${{ secrets.RCLONE_TOKEN_PATH }}" 2>&1 | tee -a build_action.log
+          else
+            echo "[WARN] No drive credentials provided" | tee -a build_action.log
+          fi
+          if [ -n "${{ secrets.CREDENTIALS_JSON_B64 }}" ]; then
+            echo "${{ secrets.CREDENTIALS_JSON_B64 }}" | base64 -d > credentials.json
+          fi
 
       - name: Upload ROM to cloud
         working-directory: toolbuild
